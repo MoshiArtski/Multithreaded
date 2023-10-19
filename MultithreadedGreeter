@@ -1,0 +1,26 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <thread>
+
+class Greeter
+{
+    public:
+    
+    void sayHello()
+    {
+        std::cout << "Hey!";
+    }
+};
+
+
+int main() {
+    
+    Greeter greeter;
+    
+    std::thread greeterThr(&Greeter::sayHello, &greeter);
+    
+    greeterThr.join();
+    
+    return 0;
+}
