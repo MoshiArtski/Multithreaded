@@ -1,0 +1,44 @@
+#include <iostream>
+#include <thread>
+
+class thread_gaurd
+{
+public:
+  explicit thread_gaurd(std::thread&& thread) : thread(std::move(thread))
+  {}
+  
+  ~thread_gaurd()
+  {
+      if (thread.joinable())
+          thread.join();
+  }
+  
+private:
+
+   std::thread thread;
+   thread_gaurd(const std::thread&) = delete;
+   thread_gaurd& operator=(const thread_gaurd&) = delete;
+};
+
+
+void sayHello()
+{
+    std::cout << "Hey, thread." << std::endl;
+}
+
+int main() {
+    
+    try
+    {
+        std::thread thread(sayHello);
+        thread_gaurd t_gaurd(std::move(thread));
+        
+        throw std::exception();
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "Exception caught: " << e.what();
+    }
+
+    return 0;
+}
