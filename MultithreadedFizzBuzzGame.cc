@@ -9,7 +9,7 @@ void playFizzBuzz(const std::vector<std::string>& playerNames, const int& numPla
     {
         std::cout << "Player " << playerNames[(n-1)%numPlayers] << " says ";
         
-        if (n % 3 == 0 && n % 5 == 0)  // Fixed the condition here
+        if (n % 3 == 0 && n % 5 == 0)  
         {
             std::cout << "FizzBuzz." << std::endl;
             continue;
