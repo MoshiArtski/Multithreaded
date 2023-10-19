@@ -52,7 +52,7 @@ int main() {
     std::cout << "Enter Max Value: ";
     std::cin >> maxValue;
     
-    std::thread playFizzBuzzThr(playFizzBuzz, std::ref(playerNames), std::ref(numPlayers), std::ref(maxValue));  
+    std::thread playFizzBuzzThr(playFizzBuzz, std::cref(playerNames), std::cref(numPlayers), std::cref(maxValue));  
     playFizzBuzzThr.join();
     
     return 0;
