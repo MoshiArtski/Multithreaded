@@ -1,0 +1,26 @@
+#ifndef SINGLETON_H
+#def SINGLETON_H
+
+#include <iostream>
+
+class Singleton
+{
+    static Singleton* single;
+    
+    Singleton()
+    {
+       std::cout << "Initialize Singleton.\n";
+    }
+    
+ public:
+     Singleton (const Singleton&) = delete;
+     Singleton& operator= (const Singleton&) = delete;
+     Singleton (Singleton&&) = delete;
+     Singleton& operator= (const Singleton&&) = delete;    
+     
+     static getSingleton()
+     {
+         static Singleton instance;
+         return instance;
+     }
+};
