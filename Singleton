@@ -1,26 +1,48 @@
-#ifndef SINGLETON_H
-#def SINGLETON_H
-
 #include <iostream>
+#include <vector>
+#include <thread>
 
 class Singleton
 {
-    static Singleton* single;
-    
     Singleton()
     {
        std::cout << "Initialize Singleton.\n";
     }
     
- public:
-     Singleton (const Singleton&) = delete;
-     Singleton& operator= (const Singleton&) = delete;
-     Singleton (Singleton&&) = delete;
-     Singleton& operator= (const Singleton&&) = delete;    
-     
-     static getSingleton()
-     {
-         static Singleton instance;
-         return instance;
-     }
+public:
+    Singleton(const Singleton&) = delete;
+    Singleton& operator=(const Singleton&) = delete;
+    Singleton(Singleton&&) = delete;
+    Singleton& operator=(Singleton&&) = delete;    
+    
+    static Singleton& getSingleton()
+    {
+        static Singleton instance;
+        return instance;
+    }
 };
+
+void task()
+{
+    Singleton& singleInstance = Singleton::getSingleton();
+    std::cout << &singleInstance << std::endl;
+}
+
+int main() 
+{
+    const int numThreads{10};
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+    
+    for (int i = 0; i < numThreads; ++i)
+    {
+        threads.push_back(std::thread(task));
+    }
+    
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+    
+    return 0;
+}
