@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+#include <thread>
+#include <mutex>
+#include <shared_mutex>
+
+std::shared_mutex sharedMutex;
+int value{3};
+std::mutex ioMutex; // For protecting cout
+
+void readValue()
+{
+    std::shared_lock<std::shared_mutex> sharedLock(sharedMutex);
+    int localValue = value;
+    sharedLock.unlock(); // Release the lock as soon as it's not needed
+
+    {
+        std::lock_guard<std::mutex> lock(ioMutex); 
+        std::cout << localValue << std::endl;
+    }
+}
+
+void writeValue()
+{
+    std::lock_guard<std::shared_mutex> exclusiveLock(sharedMutex);
+    ++value;
+}
+
+int main() {
+    
+    const int numThreads{10};
+    const int numReadThreads{8};   
+    const int numWriteThreads{numThreads - numReadThreads};   
+    
+    std::vector<std::thread> threads;
+    
+    threads.reserve(numThreads);
+    
+    for (int i = 0; i < numReadThreads; ++i)
+    {
+        threads.emplace_back(readValue);
+    }
+    
+    for (int i = 0; i < numWriteThreads; ++i)
+    {
+        threads.emplace_back(writeValue);
+    }    
+    
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+    
+    return 0;
+}
