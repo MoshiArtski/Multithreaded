@@ -1,0 +1,78 @@
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include <string>
+
+using namespace std::literals;
+
+constexpr int nDataFetched = 5;
+
+class DataFetcher {
+    std::string sData;
+    bool bUpdateProgress = false;
+    bool bCompleted = false;
+    
+    std::mutex mtx;
+    std::condition_variable cv;
+    
+public:
+    void fetchData() {
+        for (int i = 0; i < nDataFetched; ++i) {
+            std::this_thread::sleep_for(2s);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                sData += "Block" + std::to_string(i+1);
+                bUpdateProgress = true;
+                cv.notify_all();
+            }
+        }
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            bCompleted = true;
+            cv.notify_all();
+        }
+    }
+
+    void progressBar() {
+        size_t len = 0;
+        while (true) {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(lock, [&] { return bUpdateProgress || bCompleted; });
+            
+            len = sData.size();
+            bUpdateProgress = false;
+
+            if (bCompleted) {
+                std::cout << "Progress bar thread has ended." << std::endl;
+                return;
+            }
+            lock.unlock();
+
+            std::cout << "Received " << len << " bytes so far" << std::endl;
+        }
+    }
+
+    void processData() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&] { return bCompleted; });
+        
+        std::cout << "Processing sData: " << sData << std::endl;
+    }
+};
+
+int main() 
+{
+    DataFetcher fetcher;
+    
+    std::thread t1(&DataFetcher::fetchData, &fetcher);
+    std::thread t2(&DataFetcher::progressBar, &fetcher);
+    std::thread t3(&DataFetcher::processData, &fetcher);
+    
+    t1.join();
+    t2.join();
+    t3.join();
+
+    return 0;
+}
