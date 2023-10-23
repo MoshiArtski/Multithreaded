@@ -1,0 +1,45 @@
+#include <iostream>
+#include <thread>
+#include <future>
+#include <mutex>
+
+std::mutex mtx; 
+int shared_counter = 0;
+
+void produce(std::promise<int>& px)
+{
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        ++shared_counter;
+        std::cout << "Producer incremented counter: " << shared_counter << std::endl;
+    }
+
+    int x = 42;
+    px.set_value(x);
+}
+
+void consume(std::shared_future<int> fx)
+{
+    int x = fx.get();
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        ++shared_counter;
+        std::cout << "Consumer incremented counter: " << shared_counter << std::endl;
+    }
+}
+
+int main() 
+{
+    std::promise<int> prom;
+    std::shared_future<int> shared_fut = prom.get_future().share();
+
+    std::thread thr_producer(produce, std::ref(prom));
+    std::thread thr_consumer1(consume, shared_fut);
+    std::thread thr_consumer2(consume, shared_fut);
+
+    thr_producer.join();
+    thr_consumer1.join();
+    thr_consumer2.join();
+
+    return 0;
+}
