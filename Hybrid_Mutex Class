@@ -1,0 +1,55 @@
+#include <atomic>
+#include <mutex>
+#include <thread>
+#include <chrono>
+
+class HybridMutex {
+private:
+    std::atomic_flag spinlock = ATOMIC_FLAG_INIT;
+    std::mutex mtx;
+    std::atomic_bool used_mutex = false; // Indicates if we've fallen back to the mutex
+
+public:
+    void lock() {
+        const int MAX_SPINS = 1000;
+        int spins = 0;
+
+        while (spinlock.test_and_set(std::memory_order_acquire)) {
+            if (spins < MAX_SPINS) {
+                // Exponential back-off
+                std::this_thread::sleep_for(std::chrono::nanoseconds(2 << spins));
+                ++spins;
+            } else {
+                // Last check before falling back to mutex
+                if (!spinlock.test_and_set(std::memory_order_acquire)) {
+                    return;
+                }
+
+                // If not acquired after spinning, fallback to mutex
+                mtx.lock();
+                used_mutex.store(true, std::memory_order_release);
+                return;
+            }
+        }
+    }
+
+    void unlock() {
+        if (used_mutex.load(std::memory_order_acquire)) {
+            used_mutex.store(false, std::memory_order_release);
+            mtx.unlock();
+        } else {
+            spinlock.clear(std::memory_order_release);
+        }
+    }
+};
+
+int main() {
+    HybridMutex hmtx;
+
+    // Demonstration of usage
+    hmtx.lock();
+    // Critical section
+    hmtx.unlock();
+
+    return 0;
+}
